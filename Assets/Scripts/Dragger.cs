@@ -3,14 +3,21 @@ using UnityEngine;
 public class Dragger
 {
     private IDraggable _currentDraggable;
-    private Vector3 _lastMouseWorldPos;
-    private Plane _dragPlane;
+    private IDragStrategy _dragStrategy;
+    private DragStrategySwitcher _dragStrategySwitcher;
+    private Vector3 _targetWorldPosition;
+    private Vector3 _dragOffset;
     private readonly string _draggableMask = "Draggable";
 
+    public Dragger()
+    {
+        _dragStrategySwitcher = new DragStrategySwitcher();
+        _dragStrategy = _dragStrategySwitcher.SetStrategy(DragStrategyTypes.Camera);
+    }
 
     public void StartDrag()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Ray ray = _dragStrategy.GetRay();
 
         if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, LayerMask.GetMask(_draggableMask)))
         {
@@ -18,9 +25,10 @@ public class Dragger
 
             if (_currentDraggable != null)
             {
-                _dragPlane = new Plane(Vector3.up, hit.point);
-                _lastMouseWorldPos = GetMouseWorldPositionOnPlane();
-                _currentDraggable.StartDragging(_lastMouseWorldPos);
+                _dragStrategy.InitializateDragStrategy(hit);
+                _targetWorldPosition = _dragStrategy.GetTargetWorldPosition();
+                _dragOffset = hit.transform.position - _targetWorldPosition;
+                _currentDraggable.StartDragging(_targetWorldPosition);
             }
         }  
     }
@@ -30,9 +38,8 @@ public class Dragger
         if (_currentDraggable == null) 
             return;
 
-        Vector3 currentMouseWorldPos = GetMouseWorldPositionOnPlane();
-        _currentDraggable.UpdateDrag(currentMouseWorldPos);
-        _lastMouseWorldPos = currentMouseWorldPos;
+        _targetWorldPosition = _dragStrategy.GetTargetWorldPosition();
+        _currentDraggable.UpdateDrag(_targetWorldPosition + _dragOffset);
     }
 
     public void StopDrag()
@@ -42,15 +49,5 @@ public class Dragger
             _currentDraggable.StopDragging();
             _currentDraggable = null;
         }
-    }
-
-    private Vector3 GetMouseWorldPositionOnPlane()
-    {
-       Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-        if (_dragPlane.Raycast(ray, out float enter))
-            return ray.GetPoint(enter);       
-
-        return _lastMouseWorldPos;
     }
 }

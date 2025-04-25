@@ -2,9 +2,11 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    [SerializeField] private Exploder _exploder;
+    [SerializeField] private ExplosionFactory _explosionFactory;
 
     private Dragger _dragger;
+    private Exploder _exploder;
+
     private bool _isDragging;
     private readonly int _leftMouseButton = 0;
     private readonly int _rightMouseButton = 1;
@@ -12,6 +14,7 @@ public class Player : MonoBehaviour
     private void Awake()
     {
         _dragger = new Dragger();
+        _exploder = new Exploder(_explosionFactory);
         _isDragging = false;
     }
 

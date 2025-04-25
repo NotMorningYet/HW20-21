@@ -1,44 +1,31 @@
 using UnityEngine;
 
-public class Exploder :MonoBehaviour
+public class Exploder
 {
-    [SerializeField] private Explosion _explosionPrefab;
-    [SerializeField] private int _strength;
-    [SerializeField] private int _radius;
-    [SerializeField] private float _upwardModifier;
-    [SerializeField] private LayerMask _canPlaceExplosionMask;
-    
+    private int _strength = 8;
+    private int _radius = 10;
+    private float _upwardModifier = 2;
+    private readonly ExplosionFactory _explosionFactory;
+    private readonly string _canPlaceExplosionMask = "CanPlaceExplosion";
+    private IExplodeStrategy _explodeStrategy;
+    private ExplodeStrategySwitcher _explodeStrategySwitcher;
+
     private Vector3 _position;
 
+    public Exploder(ExplosionFactory explosionFactory)
+    {
+        _explosionFactory = explosionFactory;
+        _explodeStrategySwitcher = new ExplodeStrategySwitcher();
+        _explodeStrategy = _explodeStrategySwitcher.SetStrategy(ExplodeStrategyTypes.CameraMouse);
+    }
+
     public void CreateExplosion()
-    {        
-        if (CanCreateExplosion(out _position))
+    {
+        if (_explodeStrategy.CanPlaceExplosion(LayerMask.GetMask(_canPlaceExplosionMask), out _position))
         {
-            Explosion explosion = Instantiate(_explosionPrefab, _position, Quaternion.identity);
+            Explosion explosion = _explosionFactory.Get(_position);
             explosion.Initialize(_position, _strength, _radius, _upwardModifier);
             explosion.MakeBoom();
-        }        
+        }
     }
-    
-    private bool CanCreateExplosion(out Vector3 position)
-    {
-        bool canPlace = false;
-        position = Vector3.zero;
-
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, _canPlaceExplosionMask))
-        {
-            CanPlaceExplodable surface = hit.collider.GetComponent<CanPlaceExplodable>();
-
-            if (surface != null)
-            {
-                canPlace = true;
-                position = hit.point;
-            }         
-        }        
-
-        return canPlace;
-    }
-
 }

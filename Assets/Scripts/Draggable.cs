@@ -4,47 +4,37 @@ public class Draggable : MonoBehaviour, IDraggable
 {
     [SerializeField] private LayerMask _itemLayer;
     [SerializeField] private Item _parentItem;
-    [SerializeField] private float _collisionCheckRadius = 0.5f;
     [SerializeField] BoxCollider _boxCollider;
 
-    private Vector3 _dragOffset;
     private Vector3 _targetPosition;
     private readonly float _smoothSpeed = 100f;
-    private float _initialYPosition;
 
-    public bool _isDragging;
+    private bool _isDragging;
 
     public void StartDragging(Vector3 interactionPoint)
     {
         _isDragging = true;
-        _initialYPosition = _parentItem.transform.position.y;
-        
-        Vector3 interactionPointXZ = new Vector3(interactionPoint.x, _initialYPosition, interactionPoint.z);
-
-        _dragOffset = _parentItem.transform.position - interactionPointXZ;
-        _targetPosition = _parentItem.transform.position;
+        _parentItem.SetKinematic();
+        _targetPosition = transform.position;
     }
 
     public void StopDragging()
     {
         _isDragging = false;
+        _parentItem.SetPhysic();
     }
 
-    public void UpdateDrag(Vector3 currentMouseWorldPos)
+    public void UpdateDrag(Vector3 desiredPosition)
     {
         if (_isDragging == false) 
             return;
 
-        Vector3 desiredPosition = currentMouseWorldPos + _dragOffset;
-
         if (CanMoveTo(desiredPosition))
-        {
-            _targetPosition = desiredPosition;
-        }
+            _targetPosition = desiredPosition;        
 
         Vector3 smoothedPosition = Vector3.Lerp(
             _parentItem.transform.position,
-            new Vector3(_targetPosition.x, _initialYPosition, _targetPosition.z),
+            _targetPosition,
             _smoothSpeed * Time.deltaTime
         );
 
